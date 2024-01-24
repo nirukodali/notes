@@ -1,0 +1,413 @@
+
+REPORT 1
+----------
+Repository
+------------
+@Query(value="select
+cast(rbkname||' (RBK_'||rbkcode||')' as character varying) AS rbk, 
+cast(totalbookings as character varying) as totalbookings, 
+cast(totextent as character varying) as totextent , 
+cast(vaaauthcount as character varying) as vaaauthcount, 
+cast(vaaauthextent as character varying) as vaaauthextent, 
+cast(vroauthcount  as character varying) as vroauthcount, 
+cast(vroauthextent as character varying) as vroauthextent,  
+cast( totekycbookings as character varying) as totekycbookings, 
+cast(totfarmercount as character varying) as totfarmercount, 
+cast(ekycfarmercount as character varying) as ekycfarmercount,
+cast(ekycbookedext as character varying) as ekycbookedext 
+from ecrop2023.cr_authdetails_rbk_mv_K2023   where mcode=:mcode",nativeQuery=true)
+public List<Report> getReport(@Param("mcode") Integer mcode);
+ 
+ interface Report{
+ 	String getRbk();
+	String getTotalbookings();
+	String getTotextent();
+	String getVaaauthcount();
+	String getVaaauthextent();
+	String getVroauthcount();
+	String getVroauthextent();
+	String getTotekycbookings();
+	String getTotfarmercount();
+	String getEkycfarmercount();
+	String getEkycbookedext();
+ }
+
+Rest Controller
+-----------
+@Autowired private RepositoryName repositoryName;
+
+@GetMapping("/ekycAuthentication")
+public List<Report> ekycAuthentication(@RequestBody ModelClass modelClass){
+	return repositoryName.getReport(modelClass.getMcode());
+}
+
+Model class
+-----------
+class ModelClass{
+	private String mcode;
+	//consturctos, geters/setters /tostring
+}
+
+*******************************************************************************************************************
+
+<script>
+function getData(){
+	var mcodeeee = $("#mocde").val();
+
+	var data = {};
+	data['mcode'] = mcodeee;
+
+	$.ajax({
+	type: 'get',
+	url: 'http://localhost:8080/util/ekycAuthentication',
+	data: JSON.stringify(data),
+	cache: false,
+	timeout: 600000,
+	success:function(resp){
+		alert("success"+JSON.stringify(resp));
+		//table body ki append 
+	},
+	error: function(resp){ 	alert("success"+JSON.stringify(resp)); }
+});
+}
+</script>
+
+<body onload="getData()">
+	<input type="hidden" name="mcode" id="mcode" value="th:value=${session.getAttribute("mcode")}"/>
+	 
+</body>
+
+=============================================================================================================================
+==============================================================================================================================
+
+WITH OUT AJAX CALL
+===================
+
+package com.ecrops.controller;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.ecrops.model.NonWebViewModel;
+import com.ecrops.partitions.AllocatedSurveyNoMappingPartition;
+
+@Controller
+@RequestMapping("/public")
+public class HomeController {
+	
+	@Autowired private UtilRestController utilRestController;
+	@Autowired private AllocatedSurveyNoMappingPartition allocatedSurveyNoMappingPartition;
+	
+	@RequestMapping("/nonwebView")
+	public String getnonwebView(Model model,HttpSession session) {
+		model.addAttribute("list", utilRestController.getAllSeasonn());
+		return "NonwebView";
+	}
+	
+	@RequestMapping("/nonwebViewReport")
+	public String nonwebViewReport(HttpServletRequest request,Model model) {
+		String cropyear = request.getParameter("cropyear");
+		System.out.println("cropyear=>"+cropyear);
+		
+		String activeYear = request.getParameter("activeYear");
+		System.out.println("activeYear=>"+activeYear);
+		
+		String dcode = request.getParameter("dcode");
+		System.out.println("dcode=>"+dcode);
+		
+		String mcode = request.getParameter("mcode");
+		System.out.println("mcode=>"+mcode);
+		 
+		String user = request.getParameter("user");
+		System.out.println("user=>"+user);
+		
+		List<NonWebViewModel> data = allocatedSurveyNoMappingPartition.nonwebViewReport(cropyear, activeYear, dcode, mcode, user);
+		System.out.println("data size=>"+data.size());
+		model.addAttribute("data", data);
+		
+		model.addAttribute("list", utilRestController.getAllSeasonn());
+		
+		return "NonwebView";
+	}
+
+}
+
+------------------------------------------------------------------------------------------------------------------
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+function validate(){
+	var cropyear = $("#cropyear").val();
+	if(cropyear == null || cropyear == ""){
+		alert("Please select a crop year");
+		return false;
+	}
+}
+</script>
+</head>
+<body>
+<form action="nonwebViewReport" method="post" onsubmit="validate();">
+
+	<input type="text" name="activeYear" th:value="2023"/>
+	<input type="text" name="dcode" th:value="547"/>
+	<input type="text" name="mcode" th:value="5036"/>
+	<input type="text" name="user" th:value="5036"/>
+	
+	
+ 	<select name="cropyear" id="cropyear">
+ 		<option value="">-select-</option>
+ 		<option th:each="bean : ${list}" th:value="${bean.col1}" 
+       th:text="${bean.col2}" >
+      	</option>
+ 	</select>
+ 	<input type="submit" value="Submit" />
+ 	</form>
+ 	
+ 	<table border="1">
+ 		<tr>       
+                        <th> <b> S.No. </b> </th>
+
+                        <th> <b> Khata No  </b> </th>
+                        <th> <b> Survey NO   </b> </th>  
+                        <th> <b> Enjoyer Name  </b> </th>
+                        <th> <b> Enjoyer Father Name    </b> </th>
+                        <th> <b> Cultivator Name    </b> </th>
+                        <th> <b> Cultivator Father Name   </b> </th>                      
+                        <th> <b> Total Extent </b> </th>
+                        <th> <b> Cultivator Extent    </b> </th>
+                        <th> <b> Aadhaar No   </b> </th>
+                        <th> <b> Mobile No   </b> </th> 
+                        <th> <b> Gender  </b> </th> 
+
+                    </tr>
+                     <tr th:each="bean : ${data}"> 
+        <td th:text="${bean.wbdname}"></td>
+        </tr>
+                    
+ 	</table>
+</body>
+</html>
+-------------------------------------------------------------------------------------------
+@RestController
+
+@RequestMapping("/util")
+public class UtilRestController  {
+@GetMapping("/getAllSeason")
+	public List<MasterProjections> getAllSeasonn() {
+		List<MasterProjections> list = normalAreasMwiseMaoRepo.getAllSeason();
+		return list;
+	}
+}
+------------------------------------------------------------------------------------------------
+@Repository
+@Transactional
+public class AllocatedSurveyNoMappingPartition {
+	
+	@PersistenceContext
+	private EntityManager entityManager;
+ public List<NonWebViewModel> nonwebViewReport(String cropyear,String activeYear,
+			String dcode, String mcode, String user) {
+		 String partition = "", sescrp = "",season="";
+         
+         System.out.println("sescrp========="+cropyear);
+           season = cropyear.split("@")[0];
+           cropyear = cropyear.split("@")[1];
+     
+       boolean b = season.equalsIgnoreCase("R")|| season.equalsIgnoreCase("K");
+       // System.out.println("b----->" + b);
+       partition = "pattmast_nonwebland";
+       if (activeYear.equals(cropyear)) {
+           partition = "ecrop" + activeYear + "." + partition;
+
+       }else{
+         partition = "pattmast_nonwebland";
+       }
+       System.out.println("partition=>"+partition);
+       
+       String  qry = " select wbdname,wbmname,wbvname,kh_no,cr_sno,oc_name,oc_fname,cr_farmeruid,tot_extent,occupant_extent,occupname,occupfname,gender,mobileno  "
+               + " from " + partition + " a,wbvillage_mst b where a.cr_dist_code=b.wbdcode and a.cr_mand_code=b.wbmcode"
+               + " and a.cr_vcode=b.wbvcode  and a.dcode="+dcode+" and a.mcode="+mcode+""
+               + "  and entry_by='"+user+"' and cr_season='"+season+"' and cr_year="+cropyear+" order by wbdname,wbmname,wbvname";
+
+       Query insertQuery = (Query) entityManager.createNativeQuery(qry);
+       System.out.println("insertQuery=>"+insertQuery);
+		
+       List<Object[]> detailsEntities1 = insertQuery.getResultList();
+       
+       List<NonWebViewModel> detailsEntities = new ArrayList<NonWebViewModel>();
+		
+
+		for (Object[] row : detailsEntities1) {
+
+			NonWebViewModel entity = new NonWebViewModel();
+			entity.setWbdname((String) row[0]);
+			entity.setWbmname((String) row[1]);
+			entity.setWbvname((String) row[2]);
+			entity.setKh_no((String) row[3]);
+			entity.setCr_sno((String) row[4]);
+			entity.setOc_name((String) row[5]);
+			entity.setOc_fname((String) row[6]);
+			entity.setCr_farmeruid((String) row[7]);
+			entity.setTot_extent((String) row[8]);
+			entity.setOccupant_extent((String) row[9]);
+			entity.setOccupname((String) row[10]);
+			entity.setOccupfname((String) row[11]);
+			entity.setGender((String) row[12]);
+			entity.setMobileno((String) row[13]);
+			
+			detailsEntities.add(entity);
+
+		}
+		return detailsEntities;
+       
+	}
+}
+--------------------------------------------------------------------------------------------
+package com.ecrops.model;
+
+public class NonWebViewModel {
+
+	private String wbdname;
+	private String wbmname;
+	private String wbvname;
+	private String kh_no;
+	private String cr_sno;
+	private String oc_name;
+	private String oc_fname;
+	private String cr_farmeruid;
+	private String tot_extent;
+	private String occupant_extent;
+	private String occupname;
+	private String occupfname;
+	private String gender;
+	private String mobileno;
+	public NonWebViewModel() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+	public NonWebViewModel(String wbdname, String wbmname, String wbvname, String kh_no, String cr_sno, String oc_name,
+			String oc_fname, String cr_farmeruid, String tot_extent, String occupant_extent, String occupname,
+			String occupfname, String gender, String mobileno) {
+		super();
+		this.wbdname = wbdname;
+		this.wbmname = wbmname;
+		this.wbvname = wbvname;
+		this.kh_no = kh_no;
+		this.cr_sno = cr_sno;
+		this.oc_name = oc_name;
+		this.oc_fname = oc_fname;
+		this.cr_farmeruid = cr_farmeruid;
+		this.tot_extent = tot_extent;
+		this.occupant_extent = occupant_extent;
+		this.occupname = occupname;
+		this.occupfname = occupfname;
+		this.gender = gender;
+		this.mobileno = mobileno;
+	}
+	public String getWbdname() {
+		return wbdname;
+	}
+	public void setWbdname(String wbdname) {
+		this.wbdname = wbdname;
+	}
+	public String getWbmname() {
+		return wbmname;
+	}
+	public void setWbmname(String wbmname) {
+		this.wbmname = wbmname;
+	}
+	public String getWbvname() {
+		return wbvname;
+	}
+	public void setWbvname(String wbvname) {
+		this.wbvname = wbvname;
+	}
+	public String getKh_no() {
+		return kh_no;
+	}
+	public void setKh_no(String kh_no) {
+		this.kh_no = kh_no;
+	}
+	public String getCr_sno() {
+		return cr_sno;
+	}
+	public void setCr_sno(String cr_sno) {
+		this.cr_sno = cr_sno;
+	}
+	public String getOc_name() {
+		return oc_name;
+	}
+	public void setOc_name(String oc_name) {
+		this.oc_name = oc_name;
+	}
+	public String getOc_fname() {
+		return oc_fname;
+	}
+	public void setOc_fname(String oc_fname) {
+		this.oc_fname = oc_fname;
+	}
+	public String getCr_farmeruid() {
+		return cr_farmeruid;
+	}
+	public void setCr_farmeruid(String cr_farmeruid) {
+		this.cr_farmeruid = cr_farmeruid;
+	}
+	public String getTot_extent() {
+		return tot_extent;
+	}
+	public void setTot_extent(String tot_extent) {
+		this.tot_extent = tot_extent;
+	}
+	public String getOccupant_extent() {
+		return occupant_extent;
+	}
+	public void setOccupant_extent(String occupant_extent) {
+		this.occupant_extent = occupant_extent;
+	}
+	public String getOccupname() {
+		return occupname;
+	}
+	public void setOccupname(String occupname) {
+		this.occupname = occupname;
+	}
+	public String getOccupfname() {
+		return occupfname;
+	}
+	public void setOccupfname(String occupfname) {
+		this.occupfname = occupfname;
+	}
+	public String getGender() {
+		return gender;
+	}
+	public void setGender(String gender) {
+		this.gender = gender;
+	}
+	public String getMobileno() {
+		return mobileno;
+	}
+	public void setMobileno(String mobileno) {
+		this.mobileno = mobileno;
+	}
+	@Override
+	public String toString() {
+		return "NonWebViewModel [wbdname=" + wbdname + ", wbmname=" + wbmname + ", wbvname=" + wbvname + ", kh_no="
+				+ kh_no + ", cr_sno=" + cr_sno + ", oc_name=" + oc_name + ", oc_fname=" + oc_fname + ", cr_farmeruid="
+				+ cr_farmeruid + ", tot_extent=" + tot_extent + ", occupant_extent=" + occupant_extent + ", occupname="
+				+ occupname + ", occupfname=" + occupfname + ", gender=" + gender + ", mobileno=" + mobileno + "]";
+	}
+	
+	
+}
+==================================================================================================================================
+====================================================================================================================================
